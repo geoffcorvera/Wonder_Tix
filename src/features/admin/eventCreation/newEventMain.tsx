@@ -83,7 +83,7 @@ export default function NewEventMain() {
     const onInputChange = (event: React.ChangeEvent<{ value: unknown }>) => {
         setEventIndex(event.target.value as number);
         let rows: EventInstanceDetails[] = [];
-        fetch(`/api/show-tickets?event=${eventTitles[event.target.value as number].id}`)
+        fetch(`/api/tickets/show-tickets?event=${eventTitles[event.target.value as number].id}`)
             .then(request => request.json())
             .then(data => {
                 console.log(data.rows);

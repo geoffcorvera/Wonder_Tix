@@ -8,32 +8,34 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **/
 //import bodyParser from 'body-parser';
-import express from 'express';
-import {pool} from './db';
-import cors from 'cors';
+import express from 'express'
+import { pool } from './db'
+import cors from 'cors'
 import Stripe from "stripe"
-import {CheckoutFormInfo} from "../src/components/CompleteOrderForm"
-import {CartItem, Ticket} from '../src/features/ticketing/ticketingSlice'
+import { CheckoutFormInfo } from "../src/components/CompleteOrderForm"
+import { CartItem } from '../src/features/ticketing/ticketingSlice'
+
+import ticketRouter from './routes/ticketRouter'
 
 import passport from "passport"
-import {Strategy as LocalStrategy} from "passport-local"
+import { Strategy as LocalStrategy } from "passport-local"
 import bcrypt from "bcryptjs"
 import cookieParser from "cookie-parser"
 import session from "express-session"
 
 let stripe = new Stripe(process.env.PRIVATE_STRIPE_KEY, {
   apiVersion: "2020-08-27",
-});
+})
 
-const app = express();
-const port = process.env.PORT || 5000;
+const app = express()
+const port = process.env.PORT || 5000
 
 app.use(cors({
     origin: "http://localhost:3000",
     credentials: true
-}));
-app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+}))
+app.use(express.json())
+app.use(express.urlencoded({extended: true}))
 app.use(session({
     secret: "sessionsecret",
     resave: true,
@@ -44,18 +46,20 @@ app.use(passport.initialize())
 app.use(passport.session())
 
 passport.use(new LocalStrategy(async (username, password, done) => {
-    const users = await pool.query("SELECT * FROM users WHERE username = $1;", [username]);
-    if (users.rows.length <= 0) return done(null, false);
-    const user = users.rows[0];
-    const validated = await bcrypt.compare(password, user.pass_hash);
+    const users = await pool.query("SELECT * FROM users WHERE username = $1;", [username])
+    if (users.rows.length <= 0) return done(null, false)
+    const user = users.rows[0]
+    const validated = await bcrypt.compare(password, user.pass_hash)
     if (validated) {
         delete user.pass_hash
         console.log(user)
-        return done(null, user);
+        return done(null, user)
     } else {
-        return done(null, false);
+        return done(null, false)
     }
 }))
+
+app.use('/api/tickets', ticketRouter)
 
 
 export interface User {
@@ -75,20 +79,20 @@ declare global {
 }
 
 passport.serializeUser((user, done) => {
-    done(null, user.id);
+    done(null, user.id)
 })
 
 passport.deserializeUser(async (id, done) => {
-    const users = await pool.query("SELECT * FROM users WHERE id = $1;", [id]);
-    if (users.rows.length <= 0) return done("no such user", false);
+    const users = await pool.query("SELECT * FROM users WHERE id = $1;", [id])
+    if (users.rows.length <= 0) return done("no such user", false)
     const user = users.rows[0]
     delete user.pass_hash
-    return done(null, user);
+    return done(null, user)
 })
 
 const isAuthenticated = function (req, res, next) {
     if (req.user)
-        return next();
+        return next()
     else
         return res.sendStatus(401)
 }
@@ -101,18 +105,18 @@ const isSuperadmin = (req, res, next) => {
 }
 
 app.get('/api/user', isAuthenticated, (req, res) => {
-    return res.send(req.user);
+    return res.send(req.user)
 })
 
 app.get('/api/users', isSuperadmin, async (req, res) => {
     console.log('getusers')
     const users = await pool.query('SELECT * FROM users;')
-    users.rows.forEach(e => delete e.pass_hash);
+    users.rows.forEach(e => delete e.pass_hash)
     res.json(users.rows)
 })
 
 app.post('/api/newUser', isSuperadmin, async (req, res) => {
-    const passHash = await bcrypt.hash(req.body.password, 10);
+    const passHash = await bcrypt.hash(req.body.password, 10)
     try {
         await pool.query('INSERT INTO users (username, pass_hash) VALUES ($1, $2);', [req.body.username, passHash]);
     } catch (e) {
@@ -144,30 +148,30 @@ app.post('/api/deleteUser', isSuperadmin, async (req, res) => {
 })
 
 app.post('/api/login', passport.authenticate('local'), (req, res) => {
-    res.sendStatus(200);
+    res.sendStatus(200)
 })
 
 //Endpont to get list of events
 app.get("/api/event-list", async (req, res) =>{
     try {
         const events = await pool.query('select id, eventname from events where active = true')
-        res.json(events.rows);
+        res.json(events.rows)
     } catch (error) {
-        console.error(error.message);
+        console.error(error.message)
     }
 })
 
 //Endpoint to get event id
 app.get("/api/event-id", async (req, res) => {
     try {
-        const values = [req.body.eventname];
+        const values = [req.body.eventname]
         // let values =['united']
-        const ids = await pool.query('select id, eventname from events where eventname = $1', values);
-        if (ids.rowCount === 0) res.status(404).json('No event was found.');
-        else res.json(ids.rows);
+        const ids = await pool.query('select id, eventname from events where eventname = $1', values)
+        if (ids.rowCount === 0) res.status(404).json('No event was found.')
+        else res.json(ids.rows)
     }
     catch(error) {
-        console.error(error);
+        console.error(error)
     }
 })
 
@@ -178,10 +182,10 @@ app.get("/api/active-event-instance-list", async (req, res) => {
         `select ei.id, ei.eventid, events.eventname, events.eventdescription, events.image_url,
         ei.eventdate, ei.starttime, ei.totalseats, ei.availableseats
         from event_instances as ei join events on ei.eventid = events.id 
-        where events.active = true and ei.salestatus = true`);
-    res.json(events.rows);
+        where events.active = true and ei.salestatus = true;`)
+    res.json(events.rows)
   } catch (err) {
-    console.error(err.message);
+    console.error(err.message)
   }
 });
 
@@ -204,15 +208,15 @@ app.get('/api/doorlist', isAuthenticated, async (req, res) => {
             join customers as cust on tix.custid = cust.id
             where event_instance.id = $1
             group by cust.id, name, events.id, events.eventname, event_instance.id, event_instance.eventdate, event_instance.starttime, tix.checkedin
-            order by name`;
+            order by name`
         const values = [req.query.eventinstanceid]
-        const doorlist = await pool.query(querystring, values);
-        res.json(formatDoorlistResponse(doorlist.rows));
+        const doorlist = await pool.query(querystring, values)
+        res.json(formatDoorlistResponse(doorlist.rows))
     }
     catch (err) {
-        console.error(err.message);
+        console.error(err.message)
     }
-});
+})
 
 // TODO: Check that provided ticket ID is valid
 app.put('/api/checkin', isAuthenticated, async (req, res) => {
@@ -539,49 +543,6 @@ app.post("/api/delete-event", isAuthenticated, async (req, res) => {
     }
 })
 
-// Get all ticket types
-app.get("/api/tickets/type", async (req, res) => {
-    try{
-        const query = "select * from tickettype";
-        const get_all_tickets = await pool.query(query);
-        res.json(get_all_tickets.rows);
-    } catch (error) {
-        console.error(error);
-    }
-})
-
-// Set which tickets can be sold for an event
-app.post("/api/set-tickets", async (req, res) => {
-    try {
-        let body = req.body;
-        const values = [body.event_instance_id, body.ticket_type];
-        const query = "insert into linkedtickets (event_instance_id, type) values ($1, $2)";
-        const set_tickets = await pool.query(query, values);
-        res.json(set_tickets);
-    } catch (error) {
-        console.error(error);
-    }
-})
-
-// Get list of which tickets can be purchased for the show along with its prices
-app.get("/api/show-tickets", async (req, res) => {
-    try {
-        const query = 
-            `SELECT ev.id as event_id, ei.id as event_instance_id, eventname, eventdescription, eventdate, starttime, totalseats, availableseats, price, concessions
-            FROM events ev
-                LEFT JOIN event_instances ei ON ev.id=ei.eventid
-                JOIN linkedtickets lt ON lt.event_instance_id=ei.id
-                JOIN tickettype tt ON lt.ticket_type=tt.id
-            WHERE ev.id=$1 AND isseason=false;`;
-        const values = [req.query.event];
-        const available_tickets = await pool.query(query, values);
-        res.json(available_tickets);
-        console.log(available_tickets.rows);
-        return available_tickets.rows;
-    } catch (error) {
-        console.error(error);
-    }
-})
 
 app.get('/api/email_subscriptions/newsletter', isAuthenticated, async (req, res) =>
 {
@@ -738,63 +699,6 @@ app.get('/api/events', async (req, res) => {
         console.error(err.message);
     }
 });
-
-// remove $ and parse to float
-const parseMoneyString = (s: string) => Number.parseFloat(s.slice(1))
-const toTicket = (row): Ticket => {
-    const {eventdate, starttime, ...rest} = row
-    const [hour, min] = starttime.split(':')
-    let date = new Date(eventdate)
-    date.setHours(hour,min)
-    return {
-        ...rest,
-        date: date.toJSON(),
-        eventid: row.eventid.toString(),
-        ticket_price: parseMoneyString(row.ticket_price),
-        concession_price: parseMoneyString(row.concession_price),
-    }
-}
-
-interface TicketState {byId: {[key: number]: Ticket}, allIds: number[]}
-const reduceToTicketState = (res, t: Ticket) => {
-    const id = t.event_instance_id
-    const {byId, allIds} = res
-    return (allIds.includes(id))
-        ? res
-        : {byId: {...byId, [id]: t}, allIds: [...allIds, id]}
-}
-
-// Responds with tickets subset of Redux state
-app.get('/api/tickets', async (req, res) => {
-    try {
-        const qs =
-            `SELECT
-                ei.id AS event_instance_id,
-                eventid,
-                eventdate,
-                starttime,
-                totalseats,
-                availableseats,
-                tt.name AS admission_type,
-                price AS ticket_price,
-                concessions AS concession_price
-            FROM event_instances ei
-                JOIN linkedtickets lt ON ei.id=lt.event_instance_id
-                JOIN tickettype tt ON lt.ticket_type=tt.id
-            WHERE salestatus=true AND isseason=false AND availableseats > 0
-            ORDER BY ei.id, event_instance_id;`
-        const query_res = await pool.query(qs)
-        res.json(
-            query_res.rows
-                .map(toTicket)
-                .reduce(reduceToTicketState, {byId: {}, allIds: []} as TicketState)
-        );
-        console.log('# tickets:', query_res.rowCount)
-    }
-    catch (err) {
-        console.error(err.message)
-    }
-})
 
 app.get('/logout', (req, res) => {
     req.logout();
