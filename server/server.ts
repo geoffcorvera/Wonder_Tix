@@ -15,7 +15,9 @@ import Stripe from "stripe"
 import { CheckoutFormInfo } from "../src/components/CompleteOrderForm"
 import { CartItem } from '../src/features/ticketing/ticketingSlice'
 
+// Routers
 import ticketRouter from './routes/ticketRouter'
+import userManagementRouter from './routes/userManagementRouter'
 
 import passport from "passport"
 import { Strategy as LocalStrategy } from "passport-local"
@@ -60,7 +62,7 @@ passport.use(new LocalStrategy(async (username, password, done) => {
 }))
 
 app.use('/api/tickets', ticketRouter)
-
+app.use('/api/manageUsers', userManagementRouter)
 
 export interface User {
     username: string;
@@ -97,54 +99,8 @@ const isAuthenticated = function (req, res, next) {
         return res.sendStatus(401)
 }
 
-const isSuperadmin = (req, res, next) => {
-    if (req.user && req.user.is_superadmin)
-        return next()
-    else
-        return res.sendStatus(401)
-}
-
 app.get('/api/user', isAuthenticated, (req, res) => {
     return res.send(req.user)
-})
-
-app.get('/api/users', isSuperadmin, async (req, res) => {
-    console.log('getusers')
-    const users = await pool.query('SELECT * FROM users;')
-    users.rows.forEach(e => delete e.pass_hash)
-    res.json(users.rows)
-})
-
-app.post('/api/newUser', isSuperadmin, async (req, res) => {
-    const passHash = await bcrypt.hash(req.body.password, 10)
-    try {
-        await pool.query('INSERT INTO users (username, pass_hash) VALUES ($1, $2);', [req.body.username, passHash]);
-    } catch (e) {
-        res.json({error: "USER_EXISTS"})
-        return
-    }
-    res.json({})
-})
-
-app.post('/api/changeUser', isSuperadmin, async (req, res) => {
-    let sql = ''
-    let vals = []
-    if (req.body.username) {
-        sql = 'UPDATE users SET username = $1 WHERE id = $2;'
-        vals = [req.body.username, req.body.id]
-    } else if (req.body.password) {
-        const passHash = await bcrypt.hash(req.body.password, 10);
-        sql = 'UPDATE users SET pass_hash = $1 WHERE id = $2;'
-        vals = [passHash, req.body.id]
-    } else
-        res.sendStatus(200)
-    await pool.query(sql, vals)
-    res.sendStatus(200)
-})
-
-app.post('/api/deleteUser', isSuperadmin, async (req, res) => {
-    await pool.query('DELETE FROM users WHERE id = $1;', [req.body.id])
-    res.sendStatus(200)
 })
 
 app.post('/api/login', passport.authenticate('local'), (req, res) => {

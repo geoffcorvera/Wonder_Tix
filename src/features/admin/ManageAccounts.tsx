@@ -50,7 +50,7 @@ export default function ManageAccounts() {
     const dispatch = useAppDispatch()
 
     const getAccounts = async () => {
-        const r = await fetch('/api/users', {
+        const r = await fetch('/api/userManagement/all', {
             credentials: 'include',
             method: 'GET',
         })
@@ -65,7 +65,7 @@ export default function ManageAccounts() {
     useEffect(() => {getAccounts()}, [])
 
     const deleteUser = (userid: number) => async () => {
-        const r = await fetch('/api/deleteUser', {
+        const r = await fetch('/api/manageUsers/deleteUser', {
             credentials: 'include',
             method: 'post',
             headers: {'Content-Type': 'application/json'},
@@ -79,7 +79,7 @@ export default function ManageAccounts() {
 
     const submitNewUser = async (e: any) => {
         e.preventDefault()
-        const r = await fetch('/api/newUser', {
+        const r = await fetch('/api/manageUsers/newUser', {
             body: JSON.stringify({username, password}),
             credentials: "include",
             method: 'post',
@@ -100,7 +100,7 @@ export default function ManageAccounts() {
     }
 
     const editUser = async (userid: number, user: {}) => {
-        await fetch('/api/changeUser', {
+        await fetch('/api/manageUser/changeUser', {
             body: JSON.stringify({id: userid, ...user}),
             credentials: "include",
             method: 'post',
