@@ -3,7 +3,7 @@ Wonder Tix is an in-progress ticket sales software developed in collaboration wi
 
 ## Project setup
 1. `git clone` the repo
-2. `npm install`
+2. `cd` to project root and run `npm install`
 3. Create the PostgreSQL DB using the create statements in [`sql-scripts/create_tables.sql`](/sql-scripts/create_tables.sql)
 4. Download the [stripe cli](https://stripe.com/docs/stripe-cli) to the project root directory 
 	(change the `stripe` script in [package.json](/package.json) if using linux/mac)
