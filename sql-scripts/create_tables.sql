@@ -11,7 +11,7 @@
 ----Note that this will have to have a prefilled row for anonymous
 CREATE TABLE public.customers
 (
-    id integer NOT NULL DEFAULT nextval('customers_id_seq'::regclass),
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY,
     custname character varying(255) COLLATE pg_catalog."default" NOT NULL,
     email character varying(100) COLLATE pg_catalog."default",
     phone character varying(15) COLLATE pg_catalog."default",
@@ -22,13 +22,13 @@ CREATE TABLE public.customers
     vip boolean DEFAULT false,
     "volunteer list" boolean NOT NULL DEFAULT false,
     CONSTRAINT customers_pkey PRIMARY KEY (id)
-)
+);
 
 -- Create Donations table
-create type freq as enum('one-time', 'weekly', 'monthly', 'yearly');
+CREATE type freq as enum('one-time', 'weekly', 'monthly', 'yearly');
 CREATE TABLE public.donations
 (
-    donationid integer NOT NULL DEFAULT nextval('donations_donationid_seq'::regclass),
+    donationid integer NOT NULL GENERATED ALWAYS AS IDENTITY,
     donorid integer,
     isanonymous boolean DEFAULT false,
     amount money,
@@ -41,12 +41,12 @@ CREATE TABLE public.donations
         REFERENCES public.customers (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-)
+);
 
 -- Create Discounts
 CREATE TABLE public.discounts
 (
-    id integer NOT NULL DEFAULT nextval('discounts_id_seq'::regclass),
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY,
     code character varying(255) COLLATE pg_catalog."default",
     amount money,
     enddate date,
@@ -55,12 +55,12 @@ CREATE TABLE public.discounts
     min_tickets integer,
     min_events integer,
     CONSTRAINT discounts_pkey PRIMARY KEY (id)
-)
+);
 
 -- Create Reservation table
 CREATE TABLE public.reservation
 (
-    transno integer NOT NULL DEFAULT nextval('reservation_transno_seq'::regclass),
+    transno integer NOT NULL GENERATED ALWAYS AS IDENTITY,
     custid integer,
     eventid integer,
     eventname character varying(255) COLLATE pg_catalog."default",
@@ -72,17 +72,17 @@ CREATE TABLE public.reservation
         REFERENCES public.customers (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-)
+);
 
 -- Create Seasons table
 CREATE TABLE public.seasons
 (
-    id integer NOT NULL DEFAULT nextval('seasons_id_seq'::regclass),
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY,
     name character varying(100) COLLATE pg_catalog."default",
     startdate timestamp without time zone,
     enddate timestamp without time zone,
     CONSTRAINT seasons_pkey PRIMARY KEY (id)
-)
+);
 
 -- Create TicketType
 CREATE TABLE public.tickettype
@@ -98,12 +98,12 @@ CREATE TABLE public.tickettype
         REFERENCES public.seasons (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-)
+);
 
 -- Create Events table
 CREATE TABLE public.events
 (
-    id integer NOT NULL DEFAULT nextval('plays_id_seq'::regclass),
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY,
     seasonid integer,
     eventname character varying(255) COLLATE pg_catalog."default" NOT NULL,
     eventdescription character varying(255) COLLATE pg_catalog."default",
@@ -114,12 +114,12 @@ CREATE TABLE public.events
         REFERENCES public.seasons (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-)
+);
 
 -- Create Event_Instances table
 CREATE TABLE public.event_instances
 (
-    id integer NOT NULL DEFAULT nextval('showtimes_id_seq'::regclass),
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY,
     eventid integer,
     eventdate date,
     starttime time without time zone,
@@ -132,12 +132,12 @@ CREATE TABLE public.event_instances
         REFERENCES public.events (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-)
+);
 
 -- Create Tickets table
 CREATE TABLE public.tickets
 (
-    ticketno integer NOT NULL DEFAULT nextval('tickets_ticketno_seq'::regclass),
+    ticketno integer NOT NULL GENERATED ALWAYS AS IDENTITY,
     type integer,
     eventinstanceid integer,
     custid integer,
@@ -160,14 +160,14 @@ CREATE TABLE public.tickets
         REFERENCES public.tickettype (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-)
+);
 
 CREATE TABLE public.users
 (
-    id integer NOT NULL DEFAULT nextval('users_id_seq'::regclass),
+    id integer NOT NULL GENERATED ALWAYS AS IDENTITY,
     username character varying(255) COLLATE pg_catalog."default",
     pass_hash character varying(255) COLLATE pg_catalog."default",
     is_superadmin boolean DEFAULT false,
     CONSTRAINT users_pkey PRIMARY KEY (id),
     CONSTRAINT users_username_key UNIQUE (username)
-)
+);
